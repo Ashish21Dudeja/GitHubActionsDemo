@@ -1,0 +1,43 @@
+name: Docker CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Pull Docker image
+        run: docker pull apidog/self-hosted-general-runner
+
+      - name: Run Docker container
+        run: |
+          docker run --name apidog_general_runner \
+            -e TZ=Asia/Calcutta \
+            -e SERVER_APP_BASE_URL=https://api.apidog.com \
+            -e TEAM_ID=210138 \
+            -e RUNNER_ID=330 \
+            -e ACCESS_TOKEN=${{ secrets.ACCESS_TOKEN }} \
+            -p 80:4524 \
+            -v "/opt/apidog/runner":/opt/runner \
+            -d apidog/self-hosted-general-runner
+
+      - name: Check logs
+        run: docker logs apidog_general_runner
+
+      - name: Stop and remove container
+        run: |
+          docker stop apidog_general_runner
+          docker rm apidog_general_runner
